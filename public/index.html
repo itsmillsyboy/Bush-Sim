@@ -18,8 +18,6 @@
     #mp-connect { margin-top:14px; display:none; flex-direction:column; align-items:center; gap:8px; }
     .mp-input { width:280px; padding:10px 14px; border-radius:8px; border:1px solid rgba(124,252,0,.25); background:rgba(255,255,255,.07); color:white; font-size:13px; outline:none; }
     .mp-input:focus { border-color:rgba(124,252,0,.6); }
-    .mp-go { background:linear-gradient(135deg,#1565c0,#0d47a1); color:#b3e5fc; border:1px solid rgba(33,150,243,.4); padding:10px 30px; font-size:14px; border-radius:8px; cursor:pointer; transition:all .2s; }
-    .mp-go:hover { transform:translateY(-2px); box-shadow:0 4px 20px rgba(33,150,243,.4); }
 
     #tutorial { position:fixed; inset:0; background:rgba(0,0,0,.8); display:none; align-items:center; justify-content:center; z-index:150; }
     .tutorial-box { background:rgba(0,30,0,.95); border:2px solid #7cfc00; border-radius:14px; padding:30px; max-width:500px; text-align:center; }
@@ -98,9 +96,32 @@
     .ms-title { color:#7cfc00; font-size:24px; font-weight:900; }
     .ms-sub { color:rgba(255,255,255,.5); font-size:12px; margin-top:2px; }
 
+    .modal { position:fixed; inset:0; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; z-index:160; }
+    .modal-content { background:rgba(0,20,0,.95); border:2px solid #7cfc00; border-radius:14px; padding:20px; max-height:80vh; overflow-y:auto; max-width:500px; width:90%; }
+    .modal-title { color:#7cfc00; font-size:20px; font-weight:900; margin-bottom:12px; }
+    .modal-close { position:absolute; top:12px; right:12px; background:none; border:none; color:#7cfc00; font-size:24px; cursor:pointer; }
+    .seeds-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .seed-card { background:rgba(124,252,0,.08); border:1px solid rgba(124,252,0,.2); border-radius:8px; padding:10px; text-align:center; cursor:pointer; transition:all .15s; }
+    .seed-card:hover { border-color:rgba(124,252,0,.5); background:rgba(124,252,0,.12); }
+    .seed-emoji { font-size:28px; display:block; margin-bottom:4px; }
+    .seed-name { color:#7cfc00; font-size:11px; font-weight:600; }
+    .seed-stock { color:rgba(255,255,255,.3); font-size:9px; margin:2px 0; }
+    .seed-cost { color:#ffd700; font-size:10px; }
+
+    .farmer-list { display:flex; flex-direction:column; gap:8px; }
+    .farmer-card { background:rgba(255,215,0,.06); border:1px solid rgba(255,215,0,.2); border-radius:8px; padding:10px; cursor:pointer; transition:all .15s; }
+    .farmer-card:hover { border-color:rgba(255,215,0,.5); background:rgba(255,215,0,.1); }
+    .farmer-header { display:flex; justify-content:space-between; align-items:center; }
+    .farmer-name { color:#ffd700; font-size:12px; font-weight:600; }
+    .farmer-rarity { font-size:9px; color:rgba(255,255,255,.4); }
+    .farmer-cost { color:#7cfc00; font-size:11px; margin-top:4px; }
+
     #toasts { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; gap:4px; z-index:200; }
     .toast { background:rgba(0,0,0,.88); color:white; padding:8px 16px; border-radius:16px; border:1px solid rgba(255,255,255,.1); font-size:12px; animation:t-pop .2s ease; white-space:nowrap; }
     @keyframes t-pop { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+    .quick-btn { background:rgba(124,252,0,.1); border:1px solid rgba(124,252,0,.3); color:#7cfc00; padding:8px 12px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:600; transition:all .15s; margin-top:6px; width:100%; }
+    .quick-btn:hover { background:rgba(124,252,0,.15); }
   </style>
 </head>
 <body>
@@ -114,7 +135,7 @@
       <strong>Collect floating resources</strong> (💧 ☀️ 🌱) by clicking them.<br><br>
       Buy <strong>upgrades</strong> with 🌿 GP and 🪙 gold in the sidebar.<br><br>
       <strong>Buy plots</strong> below to grow multiple bushes.<br><br>
-      Buy <strong>seeds</strong> from the Shop to customize each plot!
+      Use the <strong>Shop, Farmers, & Auto-Clicker</strong> buttons for advanced features!
     </div>
     <button class="tutorial-btn" onclick="closeTutorial()">Let's Go! 🚀</button>
   </div>
@@ -129,18 +150,52 @@
   </div>
 </div>
 
+<!-- OFFLINE EARNINGS POPUP -->
+<div id="offline-pop" class="modal">
+  <div class="modal-content" style="max-width:400px;">
+    <div class="modal-title">⏱️ Welcome Back!</div>
+    <div style="color:rgba(255,255,255,.7); font-size:13px; margin:12px 0;">
+      You earned <span id="offline-amount" style="color:#ffd700; font-weight:900;">0</span> 🪙 gold while away!
+    </div>
+    <button class="quick-btn" onclick="closeOfflinePopup()">Claim</button>
+  </div>
+</div>
+
+<!-- SEEDS SHOP MODAL -->
+<div id="seeds-modal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal('seeds-modal')">✕</button>
+    <div class="modal-title">🌱 Seed Shop</div>
+    <div style="color:rgba(255,255,255,.5); font-size:10px; margin-bottom:12px;">Restocks every 2 minutes</div>
+    <div id="seeds-grid" class="seeds-grid"></div>
+  </div>
+</div>
+
+<!-- FARMERS MODAL -->
+<div id="farmers-modal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal('farmers-modal')">✕</button>
+    <div class="modal-title">👨‍🌾 Farmers & Tools</div>
+    <div id="farmers-list" class="farmer-list"></div>
+  </div>
+</div>
+
+<!-- ACHIEVEMENTS MODAL -->
+<div id="achievements-modal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal('achievements-modal')">✕</button>
+    <div class="modal-title">🏆 Achievements</div>
+    <div id="achievements-list"></div>
+  </div>
+</div>
+
 <!-- MODE SELECT -->
 <div id="mode-select">
   <div class="logo">🌿</div>
   <div class="game-title">Bush Bloom</div>
   <div class="game-sub">Grow · Expand · Conquer</div>
   <button class="mode-btn" id="sp-btn">🌱 Single Player</button>
-  <button class="mode-btn" id="mp-btn">🌐 Multiplayer</button>
-  <div id="mp-connect">
-    <input class="mp-input" id="mp-name" placeholder="Your name" maxlength="20">
-    <input class="mp-input" id="mp-url" placeholder="Server URL">
-    <button class="mp-go" id="mp-go-btn">Connect</button>
-  </div>
+  <button class="mode-btn" id="mp-btn" style="opacity:0.5;cursor:not-allowed;">🌐 Multiplayer</button>
 </div>
 
 <!-- STATS BAR -->
@@ -150,6 +205,7 @@
   <div class="stat-chip">⚡ <b id="sb-rate">0</b>/s</div>
   <div class="stat-chip stat-gold">🪙 <b id="sb-gold">0</b></div>
   <div class="stat-chip" style="color:rgba(255,255,255,.25);">⏱ <span id="sb-time">0:00</span></div>
+  <button id="dimension-btn" style="display:none;margin-left:auto;background:rgba(124,252,0,.1);border:1px solid rgba(124,252,0,.3);color:#7cfc00;padding:3px 8px;border-radius:5px;cursor:pointer;font-size:10px;">🌙 Moon</button>
   <button id="save-btn" onclick="saveGame()">💾</button>
 </div>
 
@@ -199,6 +255,22 @@
         <div class="res-track"><div class="res-fill soil" id="r-soil"></div></div>
         <span class="res-val" id="rv-soil">0</span>
       </div>
+    </div>
+
+    <button class="quick-btn" onclick="openModal('seeds-modal')">🌱 Shop</button>
+    <button class="quick-btn" onclick="openModal('farmers-modal')">👨‍🌾 Farmers</button>
+    <button class="quick-btn" onclick="openModal('achievements-modal')">🏆 Achievements</button>
+
+    <div>
+      <div class="panel-label">Auto-Clicker</div>
+      <div style="background:rgba(124,252,0,.08); border:1px solid rgba(124,252,0,.15); border-radius:7px; padding:8px; margin-bottom:8px;">
+        <div style="color:#7cfc00; font-size:11px; font-weight:600; display:flex; justify-content:space-between;">
+          <span>Level <span id="ac-level">0</span></span>
+          <span id="ac-rate" style="font-size:9px;">0/s</span>
+        </div>
+        <div style="color:rgba(255,255,255,.3); font-size:9px; margin-top:4px;">Cost: <span style="color:#7cfc00;" id="ac-cost">100</span></div>
+      </div>
+      <button class="quick-btn" onclick="buyAutoClickerLevel()">Buy Level</button>
     </div>
 
     <div class="tab-row">
@@ -251,6 +323,55 @@ const STAGES = [
   { name:'👑 Legendary', emoji:'👑', min:59000000, goldRate:85000, depth:8 },
 ];
 
+const MOON_STAGES = [
+  { name:'🌑 Void', emoji:'🌑', min:0, goldRate:.1, depth:2 },
+  { name:'🌙 Crescent', emoji:'🌙', min:40, goldRate:.25, depth:3 },
+  { name:'🌗 Half', emoji:'🌗', min:100, goldRate:.5, depth:3 },
+  { name:'⭐ Star', emoji:'⭐', min:250, goldRate:1, depth:4 },
+  { name:'✨ Twinkle', emoji:'✨', min:500, goldRate:2, depth:4 },
+  { name:'💫 Glow', emoji:'💫', min:1000, goldRate:4, depth:4 },
+  { name:'🌟 Spark', emoji:'🌟', min:2000, goldRate:8, depth:5 },
+  { name:'🔮 Mystic', emoji:'🔮', min:4000, goldRate:16, depth:5 },
+  { name:'🌌 Galaxy', emoji:'🌌', min:8000, goldRate:32, depth:5 },
+  { name:'🪐 Planet', emoji:'🪐', min:16000, goldRate:64, depth:6 },
+];
+
+const SEED_TYPES = [
+  { id:'seed1', name:'Oak', emoji:'🌳', cost:50, rarity:'common', goldBonus:1.1 },
+  { id:'seed2', name:'Maple', emoji:'🍁', cost:75, rarity:'common', goldBonus:1.15 },
+  { id:'seed3', name:'Pine', emoji:'🌲', cost:60, rarity:'common', goldBonus:1.12 },
+  { id:'seed4', name:'Ash', emoji:'🪨', cost:100, rarity:'rare', goldBonus:1.3 },
+  { id:'seed5', name:'Birch', emoji:'⚪', cost:90, rarity:'rare', goldBonus:1.25 },
+  { id:'seed6', name:'Elm', emoji:'🟢', cost:110, rarity:'rare', goldBonus:1.35 },
+  { id:'seed7', name:'Willow', emoji:'🌊', cost:150, rarity:'epic', goldBonus:1.5 },
+  { id:'seed8', name:'Spruce', emoji:'❄️', cost:140, rarity:'epic', goldBonus:1.45 },
+  { id:'seed9', name:'Cedar', emoji:'🌿', cost:160, rarity:'epic', goldBonus:1.55 },
+  { id:'seed10', name:'Walnut', emoji:'🟤', cost:200, rarity:'legendary', goldBonus:2 },
+  { id:'seed11', name:'Chestnut', emoji:'✨', cost:180, rarity:'legendary', goldBonus:1.8 },
+  { id:'seed_beanstalk', name:'Beanstalk', emoji:'🌱', cost:500, rarity:'mythic', goldBonus:0 },
+];
+
+const FARMER_TYPES = [
+  { id:'f1', name:'Novice', emoji:'👶', cost:200, rarity:'common', goldMult:1.08 },
+  { id:'f2', name:'Farmer', emoji:'👨‍🌾', cost:500, rarity:'common', goldMult:1.12 },
+  { id:'f3', name:'Expert', emoji:'👴', cost:1500, rarity:'rare', goldMult:1.25 },
+  { id:'f4', name:'Master', emoji:'🧙', cost:5000, rarity:'epic', goldMult:1.5 },
+  { id:'f5', name:'Legend', emoji:'👑', cost:20000, rarity:'legendary', goldMult:2 },
+];
+
+const ACHIEVEMENTS = [
+  { id:'stage_5', name:'Growing', emoji:'🌱', check:(g)=>getStageIdx(activePlotSize(g)) >= 4, reward:100 },
+  { id:'stage_15', name:'Flourishing', emoji:'🌻', check:(g)=>getStageIdx(activePlotSize(g)) >= 14, reward:500 },
+  { id:'stage_25', name:'Legendary', emoji:'👑', check:(g)=>getStageIdx(activePlotSize(g)) >= 24, reward:5000 },
+  { id:'plots_3', name:'Farmer', emoji:'🧑‍🌾', check:(g)=>g.ownedPlots >= 3, reward:250 },
+  { id:'plots_6', name:'Plantation', emoji:'🌳', check:(g)=>g.ownedPlots >= 6, reward:2000 },
+  { id:'gold_1k', name:'Wealthy', emoji:'💰', check:(g)=>g.gold >= 1000, reward:500 },
+  { id:'gold_100k', name:'Rich', emoji:'🤑', check:(g)=>g.gold >= 100000, reward:10000 },
+  { id:'farmers_3', name:'Team', emoji:'👥', check:(g)=>g.farmers.placed.length >= 3, reward:1000 },
+  { id:'ac_5', name:'Automation', emoji:'⚙️', check:(g)=>g.autoClicker.level >= 5, reward:1500 },
+  { id:'moon', name:'Lunar', emoji:'🌙', check:(g)=>g.moon.unlocked, reward:5000 },
+];
+
 const PLOT_COSTS = [0, 200, 2000, 18000, 150000, 1200000, 10000000, 80000000];
 const MAX_PLOTS = 8;
 
@@ -287,14 +408,26 @@ const G = {
   gold:0, goldRate:0,
   gp:0, gpSpent:0,
   ownedPlots:1, activePlot:0,
-  plots:[{ bushSize:0 }],
+  plots:[{ bushSize:0, seed:null }],
   gLevels:{}, eLevels:{},
   clickPower:5, growthRate:.08,
   combo:0, comboTimer:0,
   weather:'clear', weatherTimer:0, dayTime:0,
   totalTime:0, clicks:0,
   mode:'single', playerName:'Gardener',
+  lastSessionEnd:0,
+
+  seeds:{ inventory:{}, shopStock:{}, shopTimer:120 },
+  farmers:{ unplaced:[], placed:[], nextId:1000 },
+  autoClicker:{ level:0, clickPerSec:0, earned:0 },
+  achievements:{ list:{}, claimed:new Set() },
+  moon:{ unlocked:false, active:false, water:60, waterMax:150, waterRate:.5, sun:60, sunMax:150, sunRate:.7, soil:60, soilMax:150, soilRate:.4, gold:0, goldRate:0, gp:0, gpSpent:0, ownedPlots:1, activePlot:0, plots:[{bushSize:0}], gLevels:{}, eLevels:{}, clickPower:5, growthRate:.1, combo:0, comboTimer:0, dayTime:0, totalTime:0, clicks:0 },
 };
+
+// Initialize achievements
+for (const ach of ACHIEVEMENTS) {
+  G.achievements.list[ach.id] = { ...ach, unlocked: false };
+}
 
 // ═══════════════════════════════════════════════════════
 // CANVAS
@@ -336,18 +469,23 @@ function fmt(n) {
   return (n / 1e12).toFixed(2) + 'T';
 }
 
-function getStage(size) {
-  let s = STAGES[0];
-  for (const st of STAGES) { if (size >= st.min) s = st; else break; }
+function getStage(size, stages = STAGES) {
+  let s = stages[0];
+  for (const st of stages) { if (size >= st.min) s = st; else break; }
   return s;
 }
 
-function getStageIdx(size) {
-  for (let i = STAGES.length - 1; i >= 0; i--) { if (size >= STAGES[i].min) return i; }
+function getStageIdx(size, stages = STAGES) {
+  for (let i = stages.length - 1; i >= 0; i--) { if (size >= stages[i].min) return i; }
   return 0;
 }
 
-function activePlotSize() { return G.plots[G.activePlot]?.bushSize ?? 0; }
+function activePlotSize(gameState = G) {
+  const state = gameState.moon.active ? gameState.moon : gameState;
+  return state.plots[state.activePlot]?.bushSize ?? 0;
+}
+
+function getCurGameState() { return G.moon.active ? G.moon : G; }
 
 // ═══════════════════════════════════════════════════════
 // PARTICLES
@@ -417,15 +555,16 @@ function drawNodes() {
 }
 
 function tryCollectNode(mx, my) {
+  const state = getCurGameState();
   for (let i = nodes.length - 1; i >= 0; i--) {
     const n = nodes[i];
     const bob = Math.sin(n.pulse) * 3;
     const dx = mx - n.x, dy = my - (n.y + bob);
     if (dx * dx + dy * dy < 24 * 24) {
       const gain = 15 + Math.floor(Math.random() * 12);
-      if (n.type === 'water') { G.water = Math.min(G.waterMax, G.water + gain); spawnText(mx, my, `+${gain}`, '#7fdbff'); }
-      else if (n.type === 'sun') { G.sun = Math.min(G.sunMax, G.sun + gain); spawnText(mx, my, `+${gain}`, '#ffd700'); }
-      else { G.soil = Math.min(G.soilMax, G.soil + gain); spawnText(mx, my, `+${gain}`, '#a1887f'); }
+      if (n.type === 'water') { state.water = Math.min(state.waterMax, state.water + gain); spawnText(mx, my, `+${gain}`, '#7fdbff'); }
+      else if (n.type === 'sun') { state.sun = Math.min(state.sunMax, state.sun + gain); spawnText(mx, my, `+${gain}`, '#ffd700'); }
+      else { state.soil = Math.min(state.soilMax, state.soil + gain); spawnText(mx, my, `+${gain}`, '#a1887f'); }
       nodes.splice(i, 1);
       return true;
     }
@@ -451,7 +590,8 @@ function drawBranch(x, y, angle, len, depth, t) {
   ctx.stroke();
 
   if (depth <= 2) {
-    const lc = 2 + Math.floor(activePlotSize() / 1000);
+    const size = activePlotSize(getCurGameState());
+    const lc = 2 + Math.floor(size / 1000);
     for (let k = 0; k < lc; k++) {
       const la = (k / lc) * Math.PI * 2 + t * .06;
       const lr = len * .5;
@@ -462,16 +602,15 @@ function drawBranch(x, y, angle, len, depth, t) {
     }
   }
 
-  const spread = .28 + Math.min(activePlotSize() * .00005, .2);
+  const spread = .28 + Math.min(activePlotSize(getCurGameState()) * .00005, .2);
   drawBranch(ex, ey, angle - spread, len * .66, depth - 1, t);
   drawBranch(ex, ey, angle + spread, len * .66, depth - 1, t);
-  if (depth > 2 && activePlotSize() > 100) drawBranch(ex, ey, angle, len * .5, depth - 2, t);
+  if (depth > 2 && activePlotSize(getCurGameState()) > 100) drawBranch(ex, ey, angle, len * .5, depth - 2, t);
 }
 
-function drawBush(cx, groundY, t, plotIdx) {
-  const size = G.plots[plotIdx]?.bushSize ?? 0;
-  const noise = PLOT_NOISE[plotIdx];
-  const stage = getStage(size);
+function drawBush(cx, groundY, t, plotIdx, gameState) {
+  const size = gameState.plots[plotIdx]?.bushSize ?? 0;
+  const stage = getStage(size, gameState.moon.active ? MOON_STAGES : STAGES);
 
   if (size < 2) {
     ctx.fillStyle = '#6d4c41';
@@ -501,16 +640,34 @@ function drawBush(cx, groundY, t, plotIdx) {
 }
 
 function draw() {
-  ctx.fillStyle = '#87ceeb';
-  ctx.fillRect(0, 0, W, H);
+  const state = getCurGameState();
+  const isMoon = state.moon.active;
+
+  if (isMoon) {
+    ctx.fillStyle = '#0a0e27';
+    ctx.fillRect(0, 0, W, H);
+  } else {
+    ctx.fillStyle = '#87ceeb';
+    ctx.fillRect(0, 0, W, H);
+  }
 
   const groundY = H - 85, cx = W / 2;
-  ctx.fillStyle = '#2c1d0b';
+  ctx.fillStyle = isMoon ? '#1a1a3e' : '#2c1d0b';
   ctx.fillRect(0, groundY, W, H - groundY);
-  ctx.fillStyle = '#4CAF50';
+  ctx.fillStyle = isMoon ? '#4a4a7e' : '#4CAF50';
   ctx.fillRect(0, groundY - 8, W, 12);
 
-  drawBush(cx, groundY, gameTime, G.activePlot);
+  drawBush(cx, groundY, gameTime, state.activePlot, state);
+
+  // Draw farmers
+  for (const farmer of state.farmers.placed) {
+    if (farmer.plotIdx === state.activePlot) {
+      ctx.font = 'bold 24px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('👨‍🌾', cx - 40, groundY + 10);
+    }
+  }
+
   drawNodes();
   drawParticles();
 }
@@ -542,28 +699,379 @@ function playSound(name) {
 }
 
 // ═══════════════════════════════════════════════════════
+// SEEDS SHOP
+// ═══════════════════════════════════════════════════════
+
+function generateShop() {
+  G.seeds.shopStock = {};
+  for (const seed of SEED_TYPES) {
+    const stock = seed.id === 'seed_beanstalk' ? (Math.random() < 0.05 ? 1 : 0) : Math.floor(Math.random() * 5) + 2;
+    G.seeds.shopStock[seed.id] = stock;
+  }
+}
+
+function updateShop(dt) {
+  G.seeds.shopTimer -= dt;
+  if (G.seeds.shopTimer <= 0) {
+    G.seeds.shopTimer = 120;
+    generateShop();
+    showToast('🌱 Shop restocked!');
+  }
+}
+
+function buySeed(seedId) {
+  const seed = SEED_TYPES.find(s => s.id === seedId);
+  if (!seed) return;
+  if (G.gold < seed.cost) { showToast(`Need 🪙 ${fmt(seed.cost)}`); return; }
+  if (!G.seeds.shopStock[seedId] || G.seeds.shopStock[seedId] <= 0) { showToast('Out of stock!'); return; }
+
+  G.gold -= seed.cost;
+  G.seeds.inventory[seedId] = (G.seeds.inventory[seedId] || 0) + 1;
+  G.seeds.shopStock[seedId]--;
+
+  if (seedId === 'seed_beanstalk') {
+    G.moon.unlocked = true;
+    document.getElementById('dimension-btn').style.display = 'block';
+    showToast('🌙 Moon unlocked!');
+    playSound('milestone');
+  } else {
+    showToast(`Got ${seed.name}! 🌱`);
+  }
+
+  buildSeedsModal();
+}
+
+function plantSeed(seedId) {
+  const plot = G.plots[G.activePlot];
+  if (!plot) return;
+  plot.seed = seedId;
+
+  const seed = SEED_TYPES.find(s => s.id === seedId);
+  if (seed && seed.id !== 'seed_beanstalk') {
+    G.seeds.inventory[seedId]--;
+    if (G.seeds.inventory[seedId] <= 0) delete G.seeds.inventory[seedId];
+  }
+
+  showToast(`Planted ${seed.name}!`);
+  buildSeedsModal();
+}
+
+function buildSeedsModal() {
+  const container = document.getElementById('seeds-grid');
+  if (!container) return;
+  container.innerHTML = '';
+
+  for (const seed of SEED_TYPES) {
+    const count = G.seeds.inventory[seed.id] || 0;
+    const stock = G.seeds.shopStock[seed.id] || 0;
+    const card = document.createElement('div');
+    card.className = 'seed-card';
+    card.innerHTML = `
+      <div class="seed-emoji">${seed.emoji}</div>
+      <div class="seed-name">${seed.name}</div>
+      <div class="seed-stock">🏪 ${stock} | 🎒 ${count}</div>
+      <div class="seed-cost">${fmt(seed.cost)}</div>
+    `;
+
+    card.onclick = () => {
+      if (stock > 0) buySeed(seed.id);
+      else if (count > 0) plantSeed(seed.id);
+    };
+    container.appendChild(card);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// FARMERS & TOOLS
+// ═══════════════════════════════════════════════════════
+
+function buyFarmer(farmerId) {
+  const farmer = FARMER_TYPES.find(f => f.id === farmerId);
+  if (!farmer) return;
+  if (G.gold < farmer.cost) { showToast(`Need 🪙 ${fmt(farmer.cost)}`); return; }
+
+  G.gold -= farmer.cost;
+  const newFarmer = { id: G.farmers.nextId++, type: farmerId, rarity: farmer.rarity, level: 1, plotIdx: null };
+  G.farmers.unplaced.push(newFarmer);
+
+  showToast(`Hired ${farmer.name}! 👨‍🌾`);
+  playSound('upgrade');
+  buildFarmersModal();
+  applyUpgrades();
+}
+
+function placeFarmer(farmerId, plotIdx) {
+  const farmerIdx = G.farmers.unplaced.findIndex(f => f.id === farmerId);
+  if (farmerIdx === -1) return;
+
+  const farmer = G.farmers.unplaced.splice(farmerIdx, 1)[0];
+  farmer.plotIdx = plotIdx;
+  G.farmers.placed.push(farmer);
+
+  showToast(`Placed on plot ${plotIdx + 1}!`);
+  buildFarmersModal();
+  applyUpgrades();
+}
+
+function buildFarmersModal() {
+  const container = document.getElementById('farmers-list');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (G.farmers.unplaced.length === 0 && G.farmers.placed.length === 0) {
+    container.innerHTML = '<div style="color:rgba(255,255,255,.4); font-size:12px; text-align:center; padding:20px;">No farmers yet. Buy one to get started!</div>';
+  }
+
+  // Placed farmers
+  if (G.farmers.placed.length > 0) {
+    const title = document.createElement('div');
+    title.style.cssText = 'color:#ffd700; font-weight:600; margin-bottom:8px; font-size:12px;';
+    title.textContent = '✅ Placed Farmers';
+    container.appendChild(title);
+
+    for (const farmer of G.farmers.placed) {
+      const def = FARMER_TYPES.find(f => f.id === farmer.type);
+      const card = document.createElement('div');
+      card.className = 'farmer-card';
+      card.innerHTML = `
+        <div class="farmer-header">
+          <div>
+            <div class="farmer-name">${def.emoji} ${def.name}</div>
+            <div class="farmer-rarity">${farmer.rarity.toUpperCase()} · Plot ${farmer.plotIdx + 1}</div>
+          </div>
+        </div>
+        <div class="farmer-cost">Gold: ×${def.goldMult.toFixed(2)}</div>
+      `;
+      container.appendChild(card);
+    }
+  }
+
+  // Unplaced farmers
+  if (G.farmers.unplaced.length > 0) {
+    const title = document.createElement('div');
+    title.style.cssText = 'color:#7cfc00; font-weight:600; margin:12px 0 8px; font-size:12px;';
+    title.textContent = '⚪ Available Farmers';
+    container.appendChild(title);
+
+    for (const farmer of G.farmers.unplaced) {
+      const def = FARMER_TYPES.find(f => f.id === farmer.type);
+      const card = document.createElement('div');
+      card.className = 'farmer-card';
+      card.innerHTML = `
+        <div class="farmer-header">
+          <div>
+            <div class="farmer-name">${def.emoji} ${def.name}</div>
+            <div class="farmer-rarity">${farmer.rarity.toUpperCase()}</div>
+          </div>
+        </div>
+      `;
+
+      const selectDiv = document.createElement('div');
+      selectDiv.style.cssText = 'display:flex; gap:4px; margin-top:8px;';
+
+      for (let i = 0; i < Math.min(G.ownedPlots, 4); i++) {
+        const btn = document.createElement('button');
+        btn.className = 'quick-btn';
+        btn.style.cssText = 'flex:1; font-size:9px; padding:4px; margin:0;';
+        btn.textContent = `Plot ${i + 1}`;
+        btn.onclick = () => placeFarmer(farmer.id, i);
+        selectDiv.appendChild(btn);
+      }
+
+      card.appendChild(selectDiv);
+      container.appendChild(card);
+    }
+  }
+
+  // Buy new farmers
+  const title = document.createElement('div');
+  title.style.cssText = 'color:#7cfc00; font-weight:600; margin:12px 0 8px; font-size:12px;';
+  title.textContent = '🛒 Buy Farmers';
+  container.appendChild(title);
+
+  for (const def of FARMER_TYPES) {
+    const card = document.createElement('div');
+    card.className = 'farmer-card';
+    card.innerHTML = `
+      <div class="farmer-header">
+        <div>
+          <div class="farmer-name">${def.emoji} ${def.name}</div>
+          <div class="farmer-rarity">${def.rarity.toUpperCase()}</div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; margin-top:4px;">
+        <div class="farmer-cost">${fmt(def.cost)}</div>
+        <button class="quick-btn" style="flex:0; padding:4px 12px; font-size:9px; margin:0;" onclick="buyFarmer('${def.id}')">Buy</button>
+      </div>
+    `;
+    container.appendChild(card);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// AUTO-CLICKER
+// ═══════════════════════════════════════════════════════
+
+function buyAutoClickerLevel() {
+  const cost = Math.round(100 * Math.pow(2.5, G.autoClicker.level));
+  if (G.gold < cost) { showToast(`Need 🪙 ${fmt(cost)}`); return; }
+
+  G.gold -= cost;
+  G.autoClicker.level++;
+  G.autoClicker.clickPerSec = 0.5 * G.autoClicker.level;
+
+  showToast(`Auto-Clicker Lv ${G.autoClicker.level}! ⚙️`);
+  playSound('upgrade');
+  updateAutoClickerUI();
+}
+
+function updateAutoClickerUI() {
+  document.getElementById('ac-level').textContent = G.autoClicker.level;
+  document.getElementById('ac-rate').textContent = G.autoClicker.clickPerSec.toFixed(1) + '/s';
+  const cost = Math.round(100 * Math.pow(2.5, G.autoClicker.level));
+  document.getElementById('ac-cost').textContent = fmt(cost);
+}
+
+// ═══════════════════════════════════════════════════════
+// ACHIEVEMENTS
+// ═══════════════════════════════════════════════════════
+
+let achCheckTimer = 0;
+
+function checkAchievements() {
+  for (const [id, ach] of Object.entries(G.achievements.list)) {
+    if (!G.achievements.claimed.has(id) && ach.check(G)) {
+      G.achievements.claimed.add(id);
+      G.gp += ach.reward;
+      showAchievementPopup(ach);
+      playSound('milestone');
+    }
+  }
+}
+
+function showAchievementPopup(ach) {
+  const popup = document.getElementById('milestone-pop');
+  document.getElementById('ms-emoji').textContent = ach.emoji;
+  document.getElementById('ms-title').textContent = ach.name;
+  document.getElementById('ms-sub').textContent = `+${ach.reward} GP`;
+  popup.style.display = 'flex';
+  setTimeout(() => { popup.style.display = 'none'; }, 2500);
+}
+
+function buildAchievementsModal() {
+  const container = document.getElementById('achievements-list');
+  if (!container) return;
+  container.innerHTML = '';
+
+  for (const [id, ach] of Object.entries(G.achievements.list)) {
+    const claimed = G.achievements.claimed.has(id);
+    const card = document.createElement('div');
+    card.style.cssText = `background:${claimed ? 'rgba(124,252,0,.1)' : 'rgba(255,255,255,.02)'}; border:1px solid ${claimed ? 'rgba(124,252,0,.3)' : 'rgba(255,255,255,.1)'}; border-radius:7px; padding:10px; margin-bottom:6px;`;
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="color:#7cfc00; font-weight:600; font-size:12px;">${ach.emoji} ${ach.name}</div>
+          <div style="color:rgba(255,255,255,.3); font-size:10px; margin-top:2px;">+${ach.reward} GP ${claimed ? '✓' : ''}</div>
+        </div>
+        <div style="font-size:24px; opacity:${claimed ? '1' : '0.3'};">${ach.emoji}</div>
+      </div>
+    `;
+    container.appendChild(card);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// MOON DIMENSION
+// ═══════════════════════════════════════════════════════
+
+function initMoonState() {
+  const m = G.moon;
+  m.active = false;
+  m.water = 60;
+  m.waterMax = 150;
+  m.sun = 60;
+  m.sunMax = 150;
+  m.soil = 60;
+  m.soilMax = 150;
+  m.gold = 0;
+  m.goldRate = 0;
+  m.gp = 0;
+  m.gpSpent = 0;
+  m.ownedPlots = 1;
+  m.activePlot = 0;
+  m.plots = [{ bushSize: 0 }];
+  m.gLevels = {};
+  m.eLevels = {};
+  m.clickPower = 5;
+  m.growthRate = 0.1;
+  m.combo = 0;
+  m.comboTimer = 0;
+  m.dayTime = 0;
+  m.totalTime = 0;
+  m.clicks = 0;
+}
+
+function switchDimension(isMoon) {
+  if (isMoon && !G.moon.unlocked) { showToast('🌙 Moon not unlocked!'); return; }
+
+  G.moon.active = isMoon;
+  const btn = document.getElementById('dimension-btn');
+  btn.style.background = isMoon ? 'rgba(124,252,0,.2)' : 'rgba(124,252,0,.1)';
+
+  buildPlotBar();
+  buildUpgradeList();
+  updateUI();
+  showToast(isMoon ? '🌙 Entered Moon dimension' : '🌍 Returned to Earth');
+}
+
+// ═══════════════════════════════════════════════════════
+// OFFLINE EARNINGS
+// ═══════════════════════════════════════════════════════
+
+function calculateOfflineEarnings() {
+  if (!G.lastSessionEnd || G.lastSessionEnd === 0) return 0;
+  const timePassed = (Date.now() - G.lastSessionEnd) / 1000;
+  const offlineEarnings = Math.floor(G.goldRate * timePassed * 0.5);
+  return Math.max(0, offlineEarnings);
+}
+
+function showOfflinePopup() {
+  const earnings = calculateOfflineEarnings();
+  if (earnings <= 0) return;
+
+  G.gold += earnings;
+  document.getElementById('offline-amount').textContent = fmt(earnings);
+  document.getElementById('offline-pop').style.display = 'flex';
+}
+
+function closeOfflinePopup() {
+  document.getElementById('offline-pop').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════
 // UPGRADES
 // ═══════════════════════════════════════════════════════
 
 function upgCost(def, lvl) { return Math.round(def.cost * Math.pow(def.mult, lvl)); }
 
 function buyUpgrade(id, tab) {
+  const state = getCurGameState();
   const defs = tab === 'grow' ? GROW_UPGRADES : ECON_UPGRADES;
   const def = defs.find(u => u.id === id);
   if (!def) return;
-  const levels = tab === 'grow' ? G.gLevels : G.eLevels;
+  const levels = tab === 'grow' ? state.gLevels : state.eLevels;
   const lvl = levels[id] || 0;
   if (lvl >= def.max) { showToast('Maxed!'); return; }
   const cost = upgCost(def, lvl);
   if (tab === 'grow') {
-    const avail = G.gp - G.gpSpent;
+    const avail = state.gp - state.gpSpent;
     if (avail < cost) { showToast(`Need 🌿 ${fmt(cost)}`); return; }
-    G.gpSpent += cost;
-    G.gLevels[id] = lvl + 1;
+    state.gpSpent += cost;
+    state.gLevels[id] = lvl + 1;
   } else {
-    if (G.gold < cost) { showToast(`Need 🪙 ${fmt(cost)}`); return; }
-    G.gold -= cost;
-    G.eLevels[id] = lvl + 1;
+    if (state.gold < cost) { showToast(`Need 🪙 ${fmt(cost)}`); return; }
+    state.gold -= cost;
+    state.eLevels[id] = lvl + 1;
   }
   applyUpgrades();
   buildUpgradeList();
@@ -578,21 +1086,38 @@ function applyUpgrades() {
   G.soilRate = .38 + (gl['roots'] || 0) * .28 + (gl['compost'] || 0) * .15 + (gl['ancient'] || 0) * .3;
   G.growthRate = .08 * (1 + (gl['growth'] || 0) * .18);
   G.clickPower = 5 + (gl['thumb'] || 0) * 5 + (el['gtools'] || 0) * 10;
+
+  // Apply farmer multiplier
+  let farmerMult = 1;
+  for (const farmer of G.farmers.placed) {
+    const def = FARMER_TYPES.find(f => f.id === farmer.type);
+    if (def) farmerMult *= def.goldMult;
+  }
+
+  if (G.moon.active) {
+    const ml = G.moon.gLevels, mel = G.moon.eLevels;
+    G.moon.waterRate = .5 + (ml['barrel'] || 0) * .35 + (ml['compost'] || 0) * .15;
+    G.moon.sunRate = .7 + (ml['leaves'] || 0) * .4 + (ml['compost'] || 0) * .15;
+    G.moon.soilRate = .4 + (ml['roots'] || 0) * .3 + (ml['compost'] || 0) * .15;
+    G.moon.growthRate = .1 * (1 + (ml['growth'] || 0) * .2);
+    G.moon.clickPower = 5 + (ml['thumb'] || 0) * 5 + (mel['gtools'] || 0) * 10;
+  }
 }
 
 function buildUpgradeList() {
   function build(tab) {
+    const state = getCurGameState();
     const defs = tab === 'grow' ? GROW_UPGRADES : ECON_UPGRADES;
     const el = document.getElementById(`tab-${tab}`);
     if (!el) return;
     el.innerHTML = '';
-    const avail = G.gp - G.gpSpent;
+    const avail = state.gp - state.gpSpent;
     for (const def of defs) {
-      const lvl = (tab === 'grow' ? G.gLevels : G.eLevels)[def.id] || 0;
+      const lvl = (tab === 'grow' ? state.gLevels : state.eLevels)[def.id] || 0;
       const cost = upgCost(def, lvl);
-      const canBuy = (tab === 'grow' ? avail : G.gold) >= cost;
+      const canBuy = (tab === 'grow' ? avail : state.gold) >= cost;
       const maxed = lvl >= def.max;
-      const locked = (tab === 'grow' ? activePlotSize() : G.gold + G.gp) < def.unlock && lvl === 0;
+      const locked = (tab === 'grow' ? activePlotSize(state) : state.gold + state.gp) < def.unlock && lvl === 0;
 
       const card = document.createElement('div');
       card.className = 'upg-card' + (maxed ? ' upg-maxed' : '') + (locked ? ' upg-locked' : '') + (canBuy && !maxed && !locked ? ' upg-affordable' : '');
@@ -616,39 +1141,42 @@ function buildUpgradeList() {
 // ═══════════════════════════════════════════════════════
 
 function buildPlotBar() {
+  const state = getCurGameState();
   let html = '';
-  for (let i = 0; i < G.ownedPlots; i++) {
-    const plot = G.plots[i];
-    const stage = getStage(plot.bushSize);
-    const active = i === G.activePlot ? ' active' : '';
+  for (let i = 0; i < state.ownedPlots; i++) {
+    const plot = state.plots[i];
+    const stage = getStage(plot.bushSize, state.moon.active ? MOON_STAGES : STAGES);
+    const active = i === state.activePlot ? ' active' : '';
     html += `<div class="plot-chip${active}" onclick="switchPlot(${i})"><div>${stage.emoji}</div><div class="plot-chip-label">Plot ${i + 1}</div></div>`;
   }
-  if (G.ownedPlots < MAX_PLOTS) {
-    const cost = PLOT_COSTS[G.ownedPlots];
-    const canBuy = G.gold >= cost ? '' : ' cant-afford';
+  if (state.ownedPlots < MAX_PLOTS) {
+    const cost = PLOT_COSTS[state.ownedPlots];
+    const canBuy = state.gold >= cost ? '' : ' cant-afford';
     html += `<div id="buy-plot-btn" class="${canBuy}" onclick="buyPlot()"><div>➕</div><div>${fmt(cost)}</div></div>`;
   }
   document.getElementById('plot-bar').innerHTML = html;
 }
 
 function switchPlot(idx) {
-  if (idx < 0 || idx >= G.ownedPlots) return;
-  G.activePlot = idx;
+  const state = getCurGameState();
+  if (idx < 0 || idx >= state.ownedPlots) return;
+  state.activePlot = idx;
   buildUpgradeList();
 }
 
 function buyPlot() {
-  if (G.ownedPlots >= MAX_PLOTS) { showToast('All plots owned!'); return; }
-  const cost = PLOT_COSTS[G.ownedPlots];
-  if (G.gold < cost) { showToast(`Need 🪙 ${fmt(cost)}`); return; }
-  G.gold -= cost;
-  G.plots.push({ bushSize: 0 });
-  G.ownedPlots++;
-  G.activePlot = G.ownedPlots - 1;
+  const state = getCurGameState();
+  if (state.ownedPlots >= MAX_PLOTS) { showToast('All plots owned!'); return; }
+  const cost = PLOT_COSTS[state.ownedPlots];
+  if (state.gold < cost) { showToast(`Need 🪙 ${fmt(cost)}`); return; }
+  state.gold -= cost;
+  state.plots.push({ bushSize: 0 });
+  state.ownedPlots++;
+  state.activePlot = state.ownedPlots - 1;
   buildUpgradeList();
   buildPlotBar();
   playSound('milestone');
-  showToast(`🪴 Plot ${G.ownedPlots}`);
+  showToast(`🪴 Plot ${state.ownedPlots}`);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -656,33 +1184,35 @@ function buyPlot() {
 // ═══════════════════════════════════════════════════════
 
 function updateUI() {
-  const size = activePlotSize();
-  const stage = getStage(size);
-  const avail = Math.floor(G.gp - G.gpSpent);
+  const state = getCurGameState();
+  const size = activePlotSize(state);
+  const stageList = state.moon.active ? MOON_STAGES : STAGES;
+  const stage = getStage(size, stageList);
+  const avail = Math.floor(state.gp - state.gpSpent);
 
   document.getElementById('bush-stage-name').textContent = stage.name;
   document.getElementById('sb-stage').textContent = stage.name;
   document.getElementById('sb-size').textContent = fmt(size);
-  document.getElementById('sb-gold').textContent = fmt(G.gold);
+  document.getElementById('sb-gold').textContent = fmt(state.gold);
 
-  const m = Math.floor(G.totalTime / 60), s = Math.floor(G.totalTime % 60).toString().padStart(2, '0');
+  const m = Math.floor(state.totalTime / 60), s = Math.floor(state.totalTime % 60).toString().padStart(2, '0');
   document.getElementById('sb-time').textContent = `${m}:${s}`;
   document.getElementById('gp-val').textContent = fmt(avail);
-  document.getElementById('gold-val').textContent = fmt(G.gold);
+  document.getElementById('gold-val').textContent = fmt(state.gold);
 
-  const next = STAGES[getStageIdx(size) + 1];
+  const next = stageList[getStageIdx(size, stageList) + 1];
   if (next) {
     document.getElementById('bush-size-line').textContent = `Size ${fmt(size)} · ${fmt(next.min)}`;
     const pct = Math.min(100, ((size - stage.min) / (next.min - stage.min)) * 100);
     document.getElementById('stage-bar-fill').style.width = pct + '%';
   }
 
-  document.getElementById('r-water').style.width = (G.water / G.waterMax * 100) + '%';
-  document.getElementById('r-sun').style.width = (G.sun / G.sunMax * 100) + '%';
-  document.getElementById('r-soil').style.width = (G.soil / G.soilMax * 100) + '%';
-  document.getElementById('rv-water').textContent = Math.floor(G.water);
-  document.getElementById('rv-sun').textContent = Math.floor(G.sun);
-  document.getElementById('rv-soil').textContent = Math.floor(G.soil);
+  document.getElementById('r-water').style.width = (state.water / state.waterMax * 100) + '%';
+  document.getElementById('r-sun').style.width = (state.sun / state.sunMax * 100) + '%';
+  document.getElementById('r-soil').style.width = (state.soil / state.soilMax * 100) + '%';
+  document.getElementById('rv-water').textContent = Math.floor(state.water);
+  document.getElementById('rv-sun').textContent = Math.floor(state.sun);
+  document.getElementById('rv-soil').textContent = Math.floor(state.soil);
 
   buildPlotBar();
 }
@@ -704,11 +1234,24 @@ function showToast(msg) {
   setTimeout(() => el.remove(), 2500);
 }
 
+function openModal(id) {
+  document.getElementById(id).style.display = 'flex';
+  if (id === 'seeds-modal') buildSeedsModal();
+  if (id === 'farmers-modal') buildFarmersModal();
+  if (id === 'achievements-modal') buildAchievementsModal();
+}
+
+function closeModal(id) {
+  document.getElementById(id).style.display = 'none';
+}
+
 let lastMilestoneName = null;
 
 function checkMilestone() {
+  const state = getCurGameState();
   if (lastMilestoneName === null) return;
-  const stage = getStage(activePlotSize());
+  const stageList = state.moon.active ? MOON_STAGES : STAGES;
+  const stage = getStage(activePlotSize(state), stageList);
   if (stage.name !== lastMilestoneName) {
     lastMilestoneName = stage.name;
     showMilestone(stage.emoji, stage.name);
@@ -731,52 +1274,75 @@ function showMilestone(emoji, title) {
 let lastTs = 0, gameTime = 0, running = false;
 
 function update(dt) {
-  const rainMult = G.weather === 'rain' ? 1.8 : 1.0;
-  const sunMult = (Math.sin(G.dayTime * Math.PI / 60) + 1) / 2 * .5 + .5;
-  const irrigMult = Math.pow(1.5, G.eLevels['irrigate'] || 0);
-  const solarMult = Math.pow(1.5, G.eLevels['solar'] || 0);
+  const state = getCurGameState();
 
-  G.water = Math.min(G.waterMax, G.water + G.waterRate * rainMult * irrigMult * dt);
-  G.sun = Math.min(G.sunMax, G.sun + G.sunRate * sunMult * solarMult * dt);
-  G.soil = Math.min(G.soilMax, G.soil + G.soilRate * dt);
+  const rainMult = state.weather === 'rain' ? 1.8 : 1.0;
+  const sunMult = (Math.sin(state.dayTime * Math.PI / 60) + 1) / 2 * .5 + .5;
+  const irrigMult = Math.pow(1.5, state.eLevels['irrigate'] || 0);
+  const solarMult = Math.pow(1.5, state.eLevels['solar'] || 0);
 
-  const flowerBonus = 1 + (G.gLevels['flowers'] || 0) * .12;
-  const ancientBonus = Math.pow(1.5, G.gLevels['ancient'] || 0);
-  const plotSynBonus = 1 + (G.eLevels['plotsyn'] ? G.ownedPlots * .06 : 0);
+  state.water = Math.min(state.waterMax, state.water + state.waterRate * rainMult * irrigMult * dt);
+  state.sun = Math.min(state.sunMax, state.sun + state.sunRate * sunMult * solarMult * dt);
+  state.soil = Math.min(state.soilMax, state.soil + state.soilRate * dt);
+
+  const flowerBonus = 1 + (state.gLevels['flowers'] || 0) * .12;
+  const ancientBonus = Math.pow(1.5, state.gLevels['ancient'] || 0);
+  const plotSynBonus = 1 + (state.eLevels['plotsyn'] ? state.ownedPlots * .06 : 0);
   const growMult = flowerBonus * ancientBonus * plotSynBonus;
 
-  const canGrow = G.water > .05 && G.sun > .05 && G.soil > .05;
+  const canGrow = state.water > .05 && state.sun > .05 && state.soil > .05;
   let totalGoldRate = 0;
 
-  for (let i = 0; i < G.ownedPlots; i++) {
-    const plot = G.plots[i];
+  for (let i = 0; i < state.ownedPlots; i++) {
+    const plot = state.plots[i];
     if (canGrow) {
-      const actual = G.growthRate * growMult * dt;
+      const actual = state.growthRate * growMult * dt;
       plot.bushSize += actual;
-      G.gp += actual;
-      G.water -= actual * .15;
-      G.sun -= actual * .12;
-      G.soil -= actual * .2;
+      state.gp += actual;
+      state.water -= actual * .15;
+      state.sun -= actual * .12;
+      state.soil -= actual * .2;
     }
-    const pStage = getStage(plot.bushSize);
+    const stageList = state.moon.active ? MOON_STAGES : STAGES;
+    const pStage = getStage(plot.bushSize, stageList);
     totalGoldRate += pStage.goldRate;
   }
 
-  const marketMult = Math.pow(1.25, G.eLevels['market'] || 0);
-  const hedgeMult = Math.pow(1.5, G.eLevels['hedge'] || 0);
-  const empireMult = G.eLevels['empire'] ? 3 : 1;
-  G.goldRate = totalGoldRate * marketMult * hedgeMult * empireMult;
-  G.gold += G.goldRate * dt;
+  const marketMult = Math.pow(1.25, state.eLevels['market'] || 0);
+  const hedgeMult = Math.pow(1.5, state.eLevels['hedge'] || 0);
+  const empireMult = state.eLevels['empire'] ? 3 : 1;
+  state.goldRate = totalGoldRate * marketMult * hedgeMult * empireMult;
+  state.gold += state.goldRate * dt;
 
-  if (G.combo > 0) { G.comboTimer -= dt; if (G.comboTimer <= 0) G.combo = 0; }
+  // Auto-clicker
+  if (!state.moon.active) {
+    state.gold += G.autoClicker.clickPerSec * dt;
+  }
+
+  if (state.combo > 0) { state.comboTimer -= dt; if (state.comboTimer <= 0) state.combo = 0; }
 
   updateNodes(dt);
   updateParticles(dt);
 
-  G.weatherTimer += dt;
-  if (G.weatherTimer > 25) {
-    G.weatherTimer = 0;
-    G.weather = ['clear', 'clear', 'rain', 'sunny'][Math.floor(Math.random() * 4)];
+  if (!state.moon.active) {
+    G.seeds.shopTimer -= dt;
+    if (G.seeds.shopTimer <= 0) {
+      G.seeds.shopTimer = 120;
+      generateShop();
+      showToast('🌱 Shop restocked!');
+    }
+
+    achCheckTimer += dt;
+    if (achCheckTimer >= 0.5) {
+      achCheckTimer = 0;
+      checkAchievements();
+    }
+  }
+
+  state.weatherTimer += dt;
+  if (state.weatherTimer > 25) {
+    state.weatherTimer = 0;
+    state.weather = ['clear', 'clear', 'rain', 'sunny'][Math.floor(Math.random() * 4)];
   }
 
   checkMilestone();
@@ -787,8 +1353,9 @@ function gameLoop(ts) {
   const dt = Math.min((ts - lastTs) / 1000, .05);
   if (dt > 0) lastTs = ts;
   gameTime += dt;
-  G.dayTime += dt;
-  G.totalTime += dt;
+  const state = getCurGameState();
+  state.dayTime += dt;
+  state.totalTime += dt;
   update(dt);
   draw();
   updateUI();
@@ -806,17 +1373,26 @@ function saveGame() {
     gLevels: G.gLevels, eLevels: G.eLevels,
     ownedPlots: G.ownedPlots, activePlot: G.activePlot, plots: G.plots,
     clicks: G.clicks, totalTime: G.totalTime,
+    seeds: G.seeds, farmers: G.farmers, autoClicker: G.autoClicker,
+    achievements: { list: G.achievements.list, claimed: Array.from(G.achievements.claimed) },
+    moon: G.moon,
+    lastSessionEnd: Date.now(),
   };
-  localStorage.setItem('bushBloom_v3', JSON.stringify(d));
+  localStorage.setItem('bushBloom_v4', JSON.stringify(d));
   showToast('💾 Saved');
 }
 
 function loadGame() {
   try {
-    const raw = localStorage.getItem('bushBloom_v3');
-    if (!raw) return;
+    const raw = localStorage.getItem('bushBloom_v4');
+    if (!raw) {
+      generateShop();
+      initMoonState();
+      return;
+    }
     const d = JSON.parse(raw);
     Object.assign(G, d);
+    G.achievements.claimed = new Set(d.achievements.claimed || []);
     if (!Array.isArray(G.plots)) G.plots = [];
     if (G.plots.length < G.ownedPlots) {
       for (let i = G.plots.length; i < G.ownedPlots; i++) {
@@ -824,6 +1400,12 @@ function loadGame() {
       }
     }
     applyUpgrades();
+
+    if (G.moon.unlocked) {
+      document.getElementById('dimension-btn').style.display = 'block';
+    }
+
+    showOfflinePopup();
   } catch (e) { }
 }
 
@@ -842,7 +1424,7 @@ function startGame() {
   buildUpgradeList();
   buildPlotBar();
   applyUpgrades();
-  lastMilestoneName = getStage(activePlotSize()).name;
+  lastMilestoneName = getStage(activePlotSize(G)).name;
   running = true;
   lastTs = performance.now();
   requestAnimationFrame(gameLoop);
@@ -860,6 +1442,14 @@ document.getElementById('sp-btn').addEventListener('click', () => {
   startGame();
 });
 
+document.getElementById('mp-btn').addEventListener('click', () => {
+  showToast('🔜 Coming Soon!');
+});
+
+document.getElementById('dimension-btn').addEventListener('click', () => {
+  switchDimension(!G.moon.active);
+});
+
 canvas.addEventListener('click', (e) => {
   const rect = canvas.getBoundingClientRect();
   const mx = (e.clientX - rect.left) * (W / rect.width);
@@ -867,19 +1457,20 @@ canvas.addEventListener('click', (e) => {
 
   if (tryCollectNode(mx, my)) return;
 
+  const state = getCurGameState();
   const groundY = H - 85, cx = W / 2;
-  const plot = G.plots[G.activePlot];
+  const plot = state.plots[state.activePlot];
   const bushR = Math.min(30 + plot.bushSize * .045, 180);
   const dx = mx - cx, dy = my - (groundY - 20);
   if (dx * dx + dy * dy < (bushR + 50) * (bushR + 50)) {
-    G.combo++;
-    G.comboTimer = 1.2;
-    const cm = 1 + Math.min(G.combo * .08, 1.2);
-    const gain = G.clickPower * cm;
+    state.combo++;
+    state.comboTimer = 1.2;
+    const cm = 1 + Math.min(state.combo * .08, 1.2);
+    const gain = state.clickPower * cm;
     plot.bushSize += gain;
-    G.gp += gain;
-    G.clicks++;
-    spawnText(mx, my - 8, `+${Math.floor(gain)}`, G.combo > 3 ? '#FFD700' : '#7cfc00');
+    state.gp += gain;
+    state.clicks++;
+    spawnText(mx, my - 8, `+${Math.floor(gain)}`, state.combo > 3 ? '#FFD700' : '#7cfc00');
     playSound('click');
   }
 });
